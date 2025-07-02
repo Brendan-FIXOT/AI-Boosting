@@ -13,30 +13,33 @@ int main(int argc, char *argv[]) {
   DataParams data_params;
 
   splitDataset(data_params);
+
+  int inferred_input_size = data_params.rowLength;
+  int inferred_output_size = 1;
   
   switch (programOptions.choice) {
     case 1: {
       NeuralNetworkParams treeParams;
-      if (!getNeuralNetworkParams(programOptions, treeParams)) {
+      if (!getNeuralNetworkParams(programOptions, treeParams, inferred_input_size, inferred_output_size)) {
         return -1; // Successful or unsuccessful loading
       }
       runSingleNeuralNetwork(treeParams, data_params); break;
     }
     case 2: {
       BaggingParams baggingParams;
-      if (!getBaggingParams(programOptions, baggingParams)) {
+      if (!getBaggingParams(programOptions, baggingParams, inferred_input_size, inferred_output_size)) {
         return -1; // Successful or unsuccessful loading
       }
       runBaggingNeuralNetwork(baggingParams, data_params);
     }
     case 3: {
       BoostingParams boostingParams;
-      if (!getBoostingParams(programOptions, boostingParams)) {
+      if (!getBoostingParams(programOptions, boostingParams, inferred_input_size, inferred_output_size)) {
         return -1; // Successful or unsuccessful loading
       }
       runBoostingNeuralNetwork(boostingParams, data_params); break;
     }
-    default: std::cerr << "Invalid choice! Please choose 1, 2, 3 or 4" << std::endl; return -1;
+    default: std::cerr << "Invalid choice! Please choose 1, 2 or 3" << std::endl; return -1;
   }
   return 0;
 }

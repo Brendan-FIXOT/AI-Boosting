@@ -50,7 +50,11 @@ std::vector<double> NeuralNetwork::forward(const std::vector<double>& x) {
     A1 = relu(matvec(W1, x, b1, input_size, hidden_size));
     A2 = relu(matvec(W2, A1, b2, hidden_size, hidden_size));
     Z3 = matvec(W3, A2, b3, hidden_size, output_size);
-    return softmax(Z3);
+    double output = 1.0 / (1.0 + std::exp(-Z3[0]));  // sigmoid
+    if (std::isnan(output) || std::isinf(output)) {
+        std::cerr << "Warning: output is NaN or Inf. Z3[0] = " << Z3[0] << std::endl;
+    }
+    return {output};
 }
 
 void NeuralNetwork::backward(const std::vector<double>& x, const std::vector<double>& y_true, const std::vector<double>& y_pred) {
@@ -79,15 +83,63 @@ void NeuralNetwork::backward(const std::vector<double>& x, const std::vector<dou
 
 void NeuralNetwork::train(const std::vector<double>& X, int rowLength, const std::vector<double>& y) {
     int numSamples = y.size();
+    std::vector<double> mse_history;
+    std::vector<double> mae_history;
+
+    const int window_size = 10;              // taille de la fenêtre glissante
+    const double min_improvement = 1e-5;     // seuil de stagnation
+    const int patience = 5;                  // nombre d'epochs consécutifs sans amélioration
+    int stagnation_counter = 0;
+    double last_avg_mse = std::numeric_limits<double>::max();
 
     for (int epoch = 0; epoch < epochs; ++epoch) {
+        mse_history.clear();
+        mae_history.clear();
+
         for (int i = 0; i < numSamples; ++i) {
             std::vector<double> input(X.begin() + i * rowLength, X.begin() + (i + 1) * rowLength);
             std::vector<double> target = { y[i] };
 
             std::vector<double> output = forward(input);
+
+            if (std::isnan(output[0])) {
+                std::cerr << "Warning: output[0] is NaN at sample " << i << std::endl;
+                std::cerr << "Input: ";
+                for (double v : input) std::cerr << v << " ";
+                std::cerr << std::endl;
+            }
+            if (std::isnan(target[0])) {
+                std::cerr << "Warning: target[0] is NaN at sample " << i << std::endl;
+            }
+
             backward(input, target, output);
+
+            double loss_mse = Math::computeLossMSE(target, output);
+            double loss_mae = Math::computeLossMAE(target, output);
+            mse_history.push_back(loss_mse);
+            mae_history.push_back(loss_mae);
         }
+
+        // Calcul des moyennes glissantes après chaque epoch
+        double avg_mse = Math::movingAverage(mse_history, window_size);
+        double avg_mae = Math::movingAverage(mae_history, window_size);
+        std::cout << "[Epoch " << epoch << "] Moving Avg MSE: " << avg_mse
+                  << ", Moving Avg MAE: " << avg_mae << std::endl;
+
+        // Critère d'arrêt automatique
+        double improvement = last_avg_mse - avg_mse;
+        if (improvement < min_improvement) {
+            ++stagnation_counter;
+            std::cout << "No significant improvement (" << stagnation_counter << "/" << patience << ")\n";
+            if (stagnation_counter >= patience) {
+                std::cout << "Early stopping triggered. Training stopped.\n";
+                break;
+            }
+        } else {
+            stagnation_counter = 0;
+        }
+
+        last_avg_mse = avg_mse;
     }
 }
 
@@ -112,6 +164,7 @@ std::vector<double> NeuralNetwork::softmax(const std::vector<double>& x) {
     for (size_t i = 0; i < x.size(); ++i) {
         exp_x[i] = std::exp(x[i] - max_elem);
         sum += exp_x[i];
+        if (sum == 0.0) sum = 1e-8;
     }
     for (double& val : exp_x)
         val /= sum;
@@ -128,6 +181,14 @@ std::vector<double> NeuralNetwork::outer_product(const std::vector<double>& a, c
 
 void NeuralNetwork::update_weights(std::vector<double>& W, std::vector<double>& b,
                                    const std::vector<double>& dW, const std::vector<double>& db) {
+    if (W.size() != dW.size()) {
+        std::cerr << "Dimension mismatch: W.size() = " << W.size() << ", dW.size() = " << dW.size() << "\n";
+        return;
+    }
+    if (b.size() != db.size()) {
+        std::cerr << "Dimension mismatch: b.size() = " << b.size() << ", db.size() = " << db.size() << "\n";
+        return;
+    }
     for (size_t i = 0; i < W.size(); ++i)
         W[i] -= learning_rate * dW[i];
     for (size_t i = 0; i < b.size(); ++i)

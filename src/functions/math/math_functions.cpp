@@ -14,6 +14,19 @@ double Math::calculateMean(const std::vector<double> &labels)
     return sum / labels.size();
 }
 
+/**
+ * Calculate the mean on a windows size of values
+ */
+double Math::movingAverage(const std::vector<double>& values, int window_size) {
+    if (values.empty() || window_size <= 0) return 0.0;
+
+    int start = std::max(0, static_cast<int>(values.size()) - window_size);
+    double sum = 0.0;
+    for (int i = start; i < values.size(); ++i)
+        sum += values[i];
+    return sum / (values.size() - start);
+}
+
 //Takes also mean as parameter for optimization in data_clean.cpp
 double Math::calculateStdDev(const std::vector<double>& data, double mean) {
         double sum = 0.0;

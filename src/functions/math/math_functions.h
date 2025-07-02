@@ -11,9 +11,11 @@
 class Math{
 public:
 
-    static double calculateMean(const std::vector<double>& labels) ;
+    static double calculateMean(const std::vector<double>& labels);
 
-    static double calculateStdDev(const std::vector<double>& data, double mean)  ;
+    static double movingAverage(const std::vector<double>& values, int window_size);
+
+    static double calculateStdDev(const std::vector<double>& data, double mean);
     
     static double calculateMedian(const std::vector<double>& values);
 

@@ -47,6 +47,6 @@ struct BoostingParams {
 // Fonctions de récupération des paramètres
 // ===============================
 
-bool getNeuralNetworkParams(const ProgramOptions& options, NeuralNetworkParams& out_params);
-bool getBaggingParams(const ProgramOptions& options, BaggingParams& out_params);
-bool getBoostingParams(const ProgramOptions& options, BoostingParams& out_params);
+bool getNeuralNetworkParams(const ProgramOptions& options, NeuralNetworkParams& out_params, int inferred_input_size, int inferred_output_size);
+bool getBaggingParams(const ProgramOptions& options, BaggingParams& out_params, int inferred_input_size, int inferred_output_size);
+bool getBoostingParams(const ProgramOptions& options, BoostingParams& out_params, int inferred_input_size, int inferred_output_size);

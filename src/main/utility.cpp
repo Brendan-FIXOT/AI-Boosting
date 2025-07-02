@@ -58,9 +58,9 @@ ProgramOptions parseCommandLineArguments(int argc, char *argv[]) {
     }
   } else {
     std::cout << "Choose the method you want to use:\n"
-              << "1: Simple Decision Tree\n"
-              << "2: Bagging\n"
-              << "3: Boosting\n";
+              << "1: Single Neural Network\n"
+              << "2: Bagging Neural Network\n"
+              << "3: Boosting Neural Network\n";
     std::cin >> options.choice;
   }
   return options;
