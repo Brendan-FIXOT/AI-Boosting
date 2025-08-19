@@ -38,3 +38,22 @@ Feature importance not available for this model.
 
 ---
 
+### Boosting
+
+#### Performance Metrics
+- MSE: 5.388e-310
+- Training Time: 0.000 seconds
+- Evaluation Time: 0.041 seconds
+
+#### Model Parameters
+- hidden_size: 4.000
+- input_size: 10.000
+- learning_rate: 0.010
+- num_models: 10.000
+- output_size: 1.000
+
+#### Feature Importance
+Feature importance not available for this model.
+
+---
+

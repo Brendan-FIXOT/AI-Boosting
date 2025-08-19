@@ -68,7 +68,7 @@ bool getBoostingParams(const ProgramOptions& options,
         out_params.learningRate = std::stod(options.params[2]);
     } else {
         out_params.numModels = 10;
-        out_params.hiddenSize = 8;
+        out_params.hiddenSize = 4;
         out_params.learningRate = 0.01;
     }
 

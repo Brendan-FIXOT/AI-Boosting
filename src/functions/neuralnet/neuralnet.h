@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <random>
 
 class NeuralNetwork {
 public:

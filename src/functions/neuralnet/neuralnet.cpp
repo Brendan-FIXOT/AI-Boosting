@@ -7,7 +7,7 @@
 #include <algorithm>
 
 NeuralNetwork::NeuralNetwork(int input_size, int output_size, int hidden_size, double learning_rate)
-    : input_size(input_size), output_size(output_size), hidden_size(hidden_size), learning_rate(learning_rate) {
+    : input_size(input_size), output_size(output_size), hidden_size(hidden_size), learning_rate(learning_rate), rng(std::random_device{}()) {
     init_weights(W1, input_size, hidden_size);
     b1.assign(hidden_size, 0.0);
     init_weights(W2, hidden_size, hidden_size);

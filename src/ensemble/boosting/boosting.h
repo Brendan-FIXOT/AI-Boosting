@@ -40,7 +40,7 @@ private:
     double learning_rate;
     double initial_prediction;
 
-    std::unique_ptr<LossFunction> loss_function;
+    std::unique_ptr<LossFunction> loss_function = std::make_unique<LeastSquaresLoss>();
     std::vector<std::unique_ptr<NeuralNetwork>> models;
 
     void initializePrediction(const std::vector<double>& y);

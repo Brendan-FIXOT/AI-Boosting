@@ -25,10 +25,10 @@ void Boosting::train(const std::vector<double>& X, int rowLength,
     size_t n_samples = y.size();
     initializePrediction(y);
     std::vector<double> y_pred(n_samples, initial_prediction);
-
     for (int i = 0; i < n_estimators; ++i) {
+        std::cout << "Row length = " << rowLength << ", n_samples = " << n_samples << std::endl;
         std::vector<double> residuals = loss_function->negativeGradient(y, y_pred);
-
+        std::cout << "Row length = " << rowLength << ", n_samples = " << n_samples << std::endl;
         auto model = std::make_unique<NeuralNetwork>(rowLength, 1, 4, learning_rate);
 
         for (int epoch = 0; epoch < 1; ++epoch) {
