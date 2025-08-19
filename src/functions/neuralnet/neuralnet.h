@@ -19,6 +19,7 @@ public:
 private:
     int input_size, output_size, hidden_size;
     double learning_rate;
+    std::mt19937 rng;
     std::vector<double> W1, W2, W3;
     std::vector<double> b1, b2, b3;
     std::vector<double> A1, A2, Z3;

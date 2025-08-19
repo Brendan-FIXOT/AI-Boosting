@@ -17,11 +17,9 @@ NeuralNetwork::NeuralNetwork(int input_size, int output_size, int hidden_size, d
 }
 
 void NeuralNetwork::init_weights(std::vector<double>& W, int in_size, int out_size) {
-    std::default_random_engine gen;
-    std::normal_distribution<double> dist(0.0, 0.01);
+    std::normal_distribution<double> dist(0.0, 1.0 / std::sqrt(in_size));
     W.resize(in_size * out_size);
-    for (auto& w : W)
-        w = dist(gen);
+    for (auto& w : W) w = dist(rng); // On veut de la diversité avec une même RNG
 }
 
 std::vector<double> NeuralNetwork::matvec(const std::vector<double>& W, const std::vector<double>& x,
@@ -50,35 +48,19 @@ std::vector<double> NeuralNetwork::forward(const std::vector<double>& x) {
     A1 = relu(matvec(W1, x, b1, input_size, hidden_size));
     A2 = relu(matvec(W2, A1, b2, hidden_size, hidden_size));
     Z3 = matvec(W3, A2, b3, hidden_size, output_size);
-    double output = 1.0 / (1.0 + std::exp(-Z3[0]));  // sigmoid
-    if (std::isnan(output) || std::isinf(output)) {
-        std::cerr << "Warning: output is NaN or Inf. Z3[0] = " << Z3[0] << std::endl;
-    }
+    double output = 1.0 / (1.0 + std::exp(-Z3[0])); // Sortie linéaire
     return {output};
 }
 
 void NeuralNetwork::backward(const std::vector<double>& x, const std::vector<double>& y_true, const std::vector<double>& y_pred) {
-    double loss_mse = Math::computeLossMSE(y_true, y_pred);
-    double loss_mae = Math::computeLossMAE(y_true, y_pred);
-    std::cout << "Loss MSE: " << loss_mse << ", Loss MAE: " << loss_mae << std::endl;
-    
-    std::vector<double> dZ3 = Math::calculateMSEderivative(y_true, y_pred);
-    std::vector<double> dW3 = outer_product(A2, dZ3);
-    std::vector<double> db3 = dZ3;
-    std::vector<double> dA2 = matvecT(W3, dZ3, hidden_size, output_size);
+    double error = y_true[0] - y_pred[0];
 
-    std::vector<double> dZ2 = relu_derivative(A2, dA2);
-    std::vector<double> dW2 = outer_product(A1, dZ2);
-    std::vector<double> db2 = dZ2;
-    std::vector<double> dA1 = matvecT(W2, dZ2, hidden_size, hidden_size);
+    for (int j = 0; j < hidden_size; ++j) {
+        W3[j * output_size + 0] += learning_rate * error * A2[j]; // règle LMS : w = w + eta * erreur * activation(j)
+    }
 
-    std::vector<double> dZ1 = relu_derivative(A1, dA1);
-    std::vector<double> dW1 = outer_product(x, dZ1);
-    std::vector<double> db1 = dZ1;
-
-    update_weights(W3, b3, dW3, db3);
-    update_weights(W2, b2, dW2, db2);
-    update_weights(W1, b1, dW1, db1);
+    // biais de sortie avec le lr
+    b3[0] += learning_rate * error;
 }
 
 void NeuralNetwork::train(const std::vector<double>& X, int rowLength, const std::vector<double>& y) {
