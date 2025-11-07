@@ -7,6 +7,9 @@
 #include <iostream>
 
 Bagging::Bagging(int num_models, int input_size, int output_size, int hidden_size, double learning_rate) {
+  
+  loss_function = std::make_unique<LeastSquaresLoss>();
+  
   for (int i = 0; i < num_models; ++i) {
       models.emplace_back(std::make_unique<NeuralNetwork>(input_size, output_size, hidden_size, learning_rate));
   }
@@ -32,56 +35,46 @@ void Bagging::bootstrapSample(const std::vector<double> &data, int rowLength,
   }
 }
 
-void Bagging::train(const std::vector<double> &data, int rowLength,
-                    const std::vector<double> &labels) {
-  if (numThreads <= 1) {
-    for (int i = 0; i < numModels; ++i) {
-      std::vector<double> sampled_data;
-      std::vector<double> sampled_labels;
-      bootstrapSample(data, rowLength, labels, sampled_data, sampled_labels);
+void Bagging::train(const std::vector<double>& data, int rowLength,
+                    const std::vector<double>& labels) {
+    if (numThreads <= 1) {
+        for (int i = 0; i < numModels; ++i) {
+            std::vector<double> sampled_data;
+            std::vector<double> sampled_labels;
+            bootstrapSample(data, rowLength, labels, sampled_data, sampled_labels);
 
-      auto model = std::make_unique<NeuralNetwork>(rowLength, 1, 32, learningRate);
-      for (size_t epoch = 0; epoch < 1; ++epoch) {
-        for (size_t j = 0; j < sampled_labels.size(); ++j) {
-          std::vector<double> sample(sampled_data.begin() + j * rowLength, sampled_data.begin() + (j + 1) * rowLength);
-          std::vector<double> y_true = {sampled_labels[j]};
-          std::vector<double> y_hat = model->forward(sample);
-          model->backward(sample, y_true, y_hat);
+            auto model = std::make_unique<NeuralNetwork>(rowLength, 1, 32, learningRate);
+            model->train(sampled_data, rowLength, sampled_labels);  // ✅ entraînement propre
+            models.push_back(std::move(model));
         }
-      }
-      models.push_back(std::move(model));
-    }
-  } else {
-    std::vector<std::future<std::unique_ptr<NeuralNetwork>>> futures;
-    for (int i = 0; i < numModels; ++i) {
-      futures.push_back(std::async(std::launch::async, [this, &data, rowLength, &labels]() {
-        std::vector<double> sampled_data;
-        std::vector<double> sampled_labels;
-        bootstrapSample(data, rowLength, labels, sampled_data, sampled_labels);
+    } else {
+        std::vector<std::future<std::unique_ptr<NeuralNetwork>>> futures;
 
-        auto model = std::make_unique<NeuralNetwork>(rowLength, 1, 32, learningRate);
-        for (size_t epoch = 0; epoch < 1; ++epoch) {
-          for (size_t j = 0; j < sampled_labels.size(); ++j) {
-            std::vector<double> sample(sampled_data.begin() + j * rowLength, sampled_data.begin() + (j + 1) * rowLength);
-            std::vector<double> y_true = {sampled_labels[j]};
-            std::vector<double> y_hat = model->forward(sample);
-            model->backward(sample, y_true, y_hat);
-          }
-        }
-        return model;
-      }));
+        for (int i = 0; i < numModels; ++i) {
+            futures.push_back(std::async(std::launch::async, [this, &data, rowLength, &labels]() {
+                std::vector<double> sampled_data;
+                std::vector<double> sampled_labels;
+                bootstrapSample(data, rowLength, labels, sampled_data, sampled_labels);
 
-      if (futures.size() >= static_cast<size_t>(numThreads)) {
-        for (auto &future : futures) {
-          models.push_back(std::move(future.get()));
+                auto model = std::make_unique<NeuralNetwork>(rowLength, 1, 32, learningRate);
+                model->train(sampled_data, rowLength, sampled_labels);  // ✅ entraînement propre
+                return model;
+            }));
+
+            // Récupération des modèles si nombre de threads atteint
+            if (futures.size() >= static_cast<size_t>(numThreads)) {
+                for (auto& future : futures) {
+                    models.push_back(std::move(future.get()));
+                }
+                futures.clear();
+            }
         }
-        futures.clear();
-      }
+
+        // Récupération finale
+        for (auto& future : futures) {
+            models.push_back(std::move(future.get()));
+        }
     }
-    for (auto &future : futures) {
-      models.push_back(std::move(future.get()));
-    }
-  }
 }
 
 double Bagging::predict(const std::vector<double> &sample) const {

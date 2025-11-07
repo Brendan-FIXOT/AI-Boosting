@@ -6,7 +6,11 @@
 #include <stdexcept>
 #include <fstream>
 
-Boosting::Boosting(int num_models, int input_size, int output_size, int hidden_size, double learning_rate) {
+Boosting::Boosting(int num_models, int input_size, int output_size, int hidden_size, double learning_rate)
+    : n_estimators(num_models), learning_rate(learning_rate) {
+
+    loss_function = std::make_unique<LeastSquaresLoss>();
+
     for (int i = 0; i < num_models; ++i) {
         models.emplace_back(std::make_unique<NeuralNetwork>(input_size, output_size, hidden_size, learning_rate));
     }
@@ -27,19 +31,14 @@ void Boosting::train(const std::vector<double>& X, int rowLength,
     std::vector<double> y_pred(n_samples, initial_prediction);
 
     for (int i = 0; i < n_estimators; ++i) {
+        // Calcul des résidus
         std::vector<double> residuals = loss_function->negativeGradient(y, y_pred);
 
+        // Créer et entraîner un nouveau modèle
         auto model = std::make_unique<NeuralNetwork>(rowLength, 1, 32, learning_rate);
+        model->train(X, rowLength, residuals);  // ⬅️ Appel à ta vraie fonction train()
 
-        for (int epoch = 0; epoch < 1; ++epoch) {
-            for (size_t j = 0; j < n_samples; ++j) {
-                std::vector<double> sample(X.begin() + j * rowLength, X.begin() + (j + 1) * rowLength);
-                std::vector<double> y_true = { residuals[j] };
-                std::vector<double> y_hat = model->forward(sample);
-                model->backward(sample, y_true, y_hat);
-            }
-        }
-
+        // Mettre à jour la prédiction globale y_pred
         for (size_t j = 0; j < n_samples; ++j) {
             std::vector<double> sample(X.begin() + j * rowLength, X.begin() + (j + 1) * rowLength);
             y_pred[j] += learning_rate * model->forward(sample)[0];
@@ -47,6 +46,7 @@ void Boosting::train(const std::vector<double>& X, int rowLength,
 
         models.push_back(std::move(model));
 
+        // Affichage de la perte globale actuelle
         double current_loss = loss_function->computeLoss(y, y_pred);
         std::cout << "Iteration " << i + 1 << ", Loss: " << current_loss << std::endl;
     }

@@ -12,7 +12,7 @@ bool getNeuralNetworkParams(const ProgramOptions& options, NeuralNetworkParams& 
         out_params.learningRate = std::stod(options.params[1]);
     } else {
         out_params.hiddenSize = 8;
-        out_params.learningRate = 0.01;
+        out_params.learningRate = 0.001;
     }
 
     std::cout << "Neural Network Parameters:\n";
@@ -69,7 +69,7 @@ bool getBoostingParams(const ProgramOptions& options,
     } else {
         out_params.numModels = 10;
         out_params.hiddenSize = 8;
-        out_params.learningRate = 0.01;
+        out_params.learningRate = 0.001;
     }
 
     std::cout << "Boosting Parameters:\n";
